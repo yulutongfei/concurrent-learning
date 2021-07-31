@@ -1,0 +1,5 @@
+# Project exclude paths
+/demo-concurrent/target/
+/distributed-filesystem/target/
+/register-client/target/
+/register-server/target/
