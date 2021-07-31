@@ -2,7 +2,7 @@ package com.sunxu.register.client;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicStampedReference;
 
 /**
  * @author 孙许
@@ -22,7 +22,7 @@ public class CachedServiceRegistry {
     /**
      * 客户端缓存的所有的服务实例信息
      */
-    private AtomicReference<Applications> applications = new AtomicReference<>(new Applications());
+    private AtomicStampedReference<Applications> applications;
 
     /**
      * RegisterClient
@@ -44,6 +44,7 @@ public class CachedServiceRegistry {
         this.fetchDeltaRegistryWorker = new FetchDeltaRegistryWorker();
         this.registerClient = registerClient;
         this.httpSender = httpSender;
+        this.applications = new AtomicStampedReference<>(new Applications(), 0);
     }
 
     /**
@@ -65,6 +66,15 @@ public class CachedServiceRegistry {
     }
 
     /**
+     * 获取服务注册表
+     *
+     * @return
+     */
+    public Map<String, Map<String, ServiceInstance>> getRegistry() {
+        return applications.getReference().getRegistry();
+    }
+
+    /**
      * 负责定时拉取注册表到本地来进行缓存
      * <p>
      * 负责全量拉取注册表
@@ -76,12 +86,28 @@ public class CachedServiceRegistry {
             // 启动拉取一次就可以了
             Applications fetchedApplications = httpSender.fetchFullRegistry();
             while (true) {
-                Applications expectedApplications = applications.get();
-                if (applications.compareAndSet(expectedApplications, fetchedApplications)) {
+                Applications expectedApplications = applications.getReference();
+                int expectedStamp = applications.getStamp();
+                if (applications.compareAndSet(expectedApplications, fetchedApplications, expectedStamp, expectedStamp + 1)) {
                     break;
                 }
             }
         }
+    }
+
+    /**
+     * 服务实例操作
+     */
+    static class ServiceInstanceOperation {
+
+        /**
+         * 注册
+         */
+        public static final String REGISTER = "register";
+        /**
+         * 删除
+         */
+        public static final String REMOVE = "remove";
     }
 
     /**
@@ -120,7 +146,7 @@ public class CachedServiceRegistry {
          */
         private void mergeDeltaRegistry(DeltaRegistry deltaRegistry) {
             synchronized (applications) {
-                Map<String, Map<String, ServiceInstance>> registry = applications.get().getRegistry();
+                Map<String, Map<String, ServiceInstance>> registry = applications.getReference().getRegistry();
                 for (RecentlyChangedServiceInstance recentlyChangedItem : deltaRegistry.getRecentlyChangeQueue()) {
                     // 如果是注册操作的话
                     String serviceInstanceId = recentlyChangedItem.serviceInstance.getServiceInstanceId();
@@ -149,7 +175,7 @@ public class CachedServiceRegistry {
             // 封装一下增量注册表的对象,也就是拉取增量注册表的时候,一方面是返回那个数量,另一方面要返回服务端的服务实例数量
             Long serverSideTotalCount = deltaRegistry.getServiceInstanceTotalCount();
             long clientSideTotalCount = 0L;
-            for (Map<String, ServiceInstance> serviceInstanceMap : applications.get().getRegistry().values()) {
+            for (Map<String, ServiceInstance> serviceInstanceMap : applications.getReference().getRegistry().values()) {
                 clientSideTotalCount += serviceInstanceMap.size();
             }
             if (!serverSideTotalCount.equals(clientSideTotalCount)) {
@@ -158,37 +184,14 @@ public class CachedServiceRegistry {
                 // volatile并不保证原子性,故使用AtomicReference的CAS操作来保证操作的原子性
                 Applications fetchedApplications = httpSender.fetchFullRegistry();
                 while (true) {
-                    Applications expectedApplications = applications.get();
-                    if (applications.compareAndSet(expectedApplications, fetchedApplications)) {
+                    Applications expectedApplications = applications.getReference();
+                    int expectedStamp = applications.getStamp();
+                    if (applications.compareAndSet(expectedApplications, fetchedApplications, expectedStamp, expectedStamp + 1)) {
                         break;
                     }
                 }
             }
         }
-    }
-
-    /**
-     * 服务实例操作
-     */
-    static class ServiceInstanceOperation {
-
-        /**
-         * 注册
-         */
-        public static final String REGISTER = "register";
-        /**
-         * 删除
-         */
-        public static final String REMOVE = "remove";
-    }
-
-    /**
-     * 获取服务注册表
-     *
-     * @return
-     */
-    public Map<String, Map<String, ServiceInstance>> getRegistry() {
-        return applications.get().getRegistry();
     }
 
     /**

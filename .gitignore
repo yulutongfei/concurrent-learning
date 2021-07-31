@@ -3,3 +3,11 @@
 /distributed-filesystem/target/
 /register-client/target/
 /register-server/target/
+/.idea/gitlab-quickmr.xml
+/.idea/jarRepositories.xml
+/.idea/misc.xml
+/.idea/setting.xml
+/.idea/vcs.xml
+/.idea/workspace.xml
+/.idea/.gitignore
+/.idea/inspectionProfiles/
