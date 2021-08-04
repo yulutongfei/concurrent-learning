@@ -81,19 +81,22 @@ public class CachedServiceRegistry {
     }
 
     private void fetchFullRegistry() {
-        // 一定要在发起网络请求之前,先拿到一个当时的版本号
-        Long expectedApplicationVersion = applicationVersion.get();
-        // 接着在这里发起网络请求,此时可能会有别的线程来修改这个注册表,在这个期间更新版本
-        Applications fetchedApplications = httpSender.fetchFullRegistry();
-        // 必须是发起网络请求之后,这个注册表的版本号没有人修改过,此时他才能去修改
-        // 如果在这个期间,有人修改过注册表,版本不一样了,此时就直接if不成立,不要把你拉取到
-        // 旧版本的注册表给设置进去
-        if (applicationVersion.compareAndSet(expectedApplicationVersion, expectedApplicationVersion + 1)) {
-            while (true) {
+        while (true) {
+            // 一定要在发起网络请求之前,先拿到一个当时的版本号
+            Long expectedApplicationVersion = applicationVersion.get();
+            // 接着在这里发起网络请求,此时可能会有别的线程来修改这个注册表,在这个期间更新版本
+            Applications fetchedApplications = httpSender.fetchFullRegistry();
+            // 必须是发起网络请求之后,这个注册表的版本号没有人修改过,此时他才能去修改
+            // 如果在这个期间,有人修改过注册表,版本不一样了,此时就直接if不成立,不要把你拉取到
+            // 旧版本的注册表给设置进去
+            if (applicationVersion.compareAndSet(expectedApplicationVersion, expectedApplicationVersion + 1)) {
+                // 在jvm里,引用的赋值本身是保证原子性的
+                // long i = 0
+                // 通过AtomicReference
                 Applications expectedApplications = applications.getReference();
                 int expectedStamp = applications.getStamp();
                 if (applications.compareAndSet(expectedApplications, fetchedApplications, expectedStamp, expectedStamp + 1)) {
-                    break;
+                    return;
                 }
             }
         }
