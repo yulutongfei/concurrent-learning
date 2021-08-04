@@ -46,31 +46,6 @@ public class RegisterServerController {
     }
 
     /**
-     * 发送心跳
-     *
-     * @param request 心跳请求
-     * @return 心跳响应
-     */
-    public HeartBeatResponse heartBeat(HeartBeatRequest request) {
-        HeartBeatResponse response = new HeartBeatResponse();
-        System.out.println("心跳请求request:" + request);
-        try {
-            // 对服务进行续约
-            ServiceInstance serviceInstance = registry.getServiceInstance(request.getServiceName(), request.getServiceId());
-            serviceInstance.renew();
-
-            // 记录一下每分钟心跳次数
-            HeartbeatCounter heartbeatCounter = HeartbeatCounter.getInstance();
-            heartbeatCounter.increment();
-            response.setStatus(HeartBeatResponse.SUCCESS);
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.setStatus(HeartBeatResponse.FAILURE);
-        }
-        return response;
-    }
-
-    /**
      * 服务实例下线
      *
      * @param serviceName
@@ -87,12 +62,44 @@ public class RegisterServerController {
     }
 
     /**
+     * 发送心跳
+     *
+     * @param request 心跳请求
+     * @return 心跳响应
+     */
+    public HeartBeatResponse heartBeat(HeartBeatRequest request) {
+        HeartBeatResponse response = new HeartBeatResponse();
+        System.out.println("心跳请求request:" + request);
+        try {
+            // 对服务进行续约
+            ServiceInstance serviceInstance = registry.getServiceInstance(request.getServiceName(), request.getServiceId());
+            if (serviceInstance != null) {
+                serviceInstance.renew();
+            }
+
+            // 记录一下每分钟心跳次数
+            HeartbeatCounter heartbeatCounter = HeartbeatCounter.getInstance();
+            heartbeatCounter.increment();
+            response.setStatus(HeartBeatResponse.SUCCESS);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setStatus(HeartBeatResponse.FAILURE);
+        }
+        return response;
+    }
+
+    /**
      * 拉取全量服务注册表
      *
      * @return
      */
     public Applications fetchFullRegistry() {
-        return new Applications(registry.getRegistry());
+        try {
+            registry.readLock();
+            return new Applications(registry.getRegistry());
+        } finally {
+            registry.readUnLock();
+        }
     }
 
     /**
@@ -101,6 +108,11 @@ public class RegisterServerController {
      * @return
      */
     public DeltaRegistry fetchDeltaRegistry() {
-        return registry.getDeltaRegistry();
+        try {
+            registry.readLock();
+            return registry.getDeltaRegistry();
+        } finally {
+            registry.readUnLock();
+        }
     }
 }

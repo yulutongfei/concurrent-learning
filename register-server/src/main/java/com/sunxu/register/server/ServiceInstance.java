@@ -88,7 +88,9 @@ public class ServiceInstance {
     }
 
     public void renew() {
-        this.lease.renew();
+        if (this.lease != null) {
+            this.lease.renew();
+        }
     }
 
     /**

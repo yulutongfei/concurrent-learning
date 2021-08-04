@@ -1,6 +1,5 @@
 package com.sunxu;
 
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -15,32 +14,7 @@ public class ReentrantLockDemo {
     static ReentrantLock lock = new ReentrantLock();
 
 
-    public static void main(String[] args) {
-        new Thread(() -> {
-            try {
-                lock.lock();
-                Condition condition = lock.newCondition();
-                condition.await();
-                condition.signalAll();
-                for (int i1 = 0; i1 < 10; i1++) {
-                    i++;
-                    System.out.println(i);
-                }
-            } finally {
-                lock.unlock();
-            }
-        }).start();
+    public static void main(String[] args) throws Exception {
 
-        new Thread(() -> {
-            try {
-                lock.lock();
-                for (int i1 = 0; i1 < 10; i1++) {
-                    i++;
-                    System.out.println(i);
-                }
-            } finally {
-                lock.unlock();
-            }
-        }).start();
     }
 }

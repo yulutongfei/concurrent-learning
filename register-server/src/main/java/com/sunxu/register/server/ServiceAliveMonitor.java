@@ -1,5 +1,7 @@
 package com.sunxu.register.server;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,20 +45,34 @@ public class ServiceAliveMonitor {
                         Thread.sleep(CHECK_ALIVE_INTERVAL);
                         continue;
                     }
-                    registryMap = serviceRegistry.getRegistry();
-                    for (String serviceName : registryMap.keySet()) {
-                        Map<String, ServiceInstance> instanceMap = registryMap.get(serviceName);
-                        for (ServiceInstance serviceInstance : instanceMap.values()) {
-                            if (!serviceInstance.isAlive()) {
-                                // 说明服务实例距离上一次发送心跳已经超过90秒了
-                                // 从注册表中摘除服务实例
-                                serviceRegistry.remove(serviceInstance.getServiceName(), serviceInstance.getServiceInstanceId());
-                                // 更新自我保护机制的阈值
-                                synchronized (SelfProtectionPolicy.class) {
-                                    selfProtectionPolicy.setExpectedHeartbeatRate(selfProtectionPolicy.getExpectedHeartbeatRate() - 2);
-                                    selfProtectionPolicy.setExpectedHeartbeatThreshold((long) (selfProtectionPolicy.getExpectedHeartbeatRate() * 0.85));
+                    // 定义要删除的服务实例的集合
+                    List<ServiceInstance> removingServiceInstances = new ArrayList<>();
+                    // 开始读服务注册表的数据，这个过程中，别人是可以读，但是不可以写
+                    try {
+                        // 对整个服务注册表加读锁
+                        serviceRegistry.readLock();
+                        registryMap = serviceRegistry.getRegistry();
+                        for (String serviceName : registryMap.keySet()) {
+                            Map<String, ServiceInstance> instanceMap = registryMap.get(serviceName);
+                            for (ServiceInstance serviceInstance : instanceMap.values()) {
+                                if (!serviceInstance.isAlive()) {
+                                    // 说明服务实例距离上一次发送心跳已经超过90秒了
+                                    removingServiceInstances.add(serviceInstance);
                                 }
                             }
+                        }
+                    } finally {
+                        // 释放读锁
+                        serviceRegistry.readUnLock();
+                    }
+                    // 将所有的要删除的服务实例，从服务注册表删除
+                    for (ServiceInstance serviceInstance : removingServiceInstances) {
+                        // 从注册表中摘除服务实例
+                        serviceRegistry.remove(serviceInstance.getServiceName(), serviceInstance.getServiceInstanceId());
+                        // 更新自我保护机制的阈值
+                        synchronized (SelfProtectionPolicy.class) {
+                            selfProtectionPolicy.setExpectedHeartbeatRate(selfProtectionPolicy.getExpectedHeartbeatRate() - 2);
+                            selfProtectionPolicy.setExpectedHeartbeatThreshold((long) (selfProtectionPolicy.getExpectedHeartbeatRate() * 0.85));
                         }
                     }
                     Thread.sleep(CHECK_ALIVE_INTERVAL);
