@@ -35,13 +35,13 @@ public class FSDirectory {
                 if (splitedPath.trim().equals("")) {
                     continue;
                 }
-                INodeDirectory dir = findDirectory(dirTree, splitedPath);
+                INodeDirectory dir = findDirectory(parent, splitedPath);
                 if (dir != null) {
                     parent = dir;
                     continue;
                 }
                 // 如果dir为空则创建
-                INodeDirectory child = new INodeDirectory(path);
+                INodeDirectory child = new INodeDirectory(splitedPath);
                 parent.addChild(child);
             }
         }
