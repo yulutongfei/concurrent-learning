@@ -66,6 +66,7 @@ public class RegisterClient {
      */
     public void shutdown() {
         this.isRunning = false;
+        // 此时interrupt可以将线程从sleep中唤醒，然后就可以重新执行while循环，此时判断isRunning = false就可以退出了
         this.heartBeatWorker.interrupt();
         this.registry.destroy();
         this.httpSender.cancel("eshop-service", serviceInstanceId);

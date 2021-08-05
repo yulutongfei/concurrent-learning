@@ -37,6 +37,7 @@ public class FSEditlog {
 
     /**
      * 每个线程自己本地txid的副本
+     * 如果通过Map<Thread, Long>这种写法，就要对这map进行多线程加锁了
      */
     private ThreadLocal<Long> localTxid = new ThreadLocal<>();
 
