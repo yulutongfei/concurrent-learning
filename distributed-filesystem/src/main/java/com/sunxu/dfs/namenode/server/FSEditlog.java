@@ -74,18 +74,24 @@ public class FSEditlog {
             if (isSyncRunning) {
                 // 加入说某个线程已经把txid = 1,2,3,4,5的edits log都从syncBuffer刷入磁盘了
                 // 或者说此时正在刷入磁盘中
-                // 那么这个时候来一个线程,他对应txid=3,此时他是可以直接返回了
+                // 此时syncMaxTxid = 5,代表的是正在输入磁盘的最大txid
+                // 那么这个时候来一个线程，他对应的txid = 3，此时他是可以直接返回了
+                // 就代表说肯定是他对应的edits log已经被别的线程在刷入磁盘了
+                // 这个时候txid = 3的线程就不需要等待了
                 long txid = localTxid.get();
                 if (txid <= syncMaxTxid) {
                     return;
                 }
 
-                // 假如此时来一个txid = 6的线程
+                // 此时再来一个txid = 9的线程的话，那么他会发现说，已经有线程在等待刷下一批数据到磁盘了
+                // 此时会直接返回
+                // 假如此时来一个txid = 6的线程，那么的话，他是不好说的
                 // 他就需要做一些等待,同时要释放锁
                 if (isWaitSync) {
                     return;
                 }
                 // 只会又一个线程在等待
+                // 比如次数可能是txid = 15的线程在这里等待
                 isWaitSync = true;
                 while (isSyncRunning) {
                     try {
