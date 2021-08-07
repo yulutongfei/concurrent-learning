@@ -15,6 +15,11 @@ public class ReentrantLockDemo {
 
 
     public static void main(String[] args) throws Exception {
-
+        lock.lock();
+        try {
+            System.out.println("test");
+        } finally {
+            lock.unlock();
+        }
     }
 }
