@@ -169,23 +169,18 @@ public class ServiceRegistryCache {
         public void run() {
             while (true) {
                 try {
-                    synchronized (lock) {
-                        if (readWriteMap.get(CacheKey.FULL_SERVICE_REGISTRY) == null) {
-                            writeLock.lock();
-                            try {
+                    writeLock.lock();
+                    try {
+                        synchronized (lock) {
+                            if (readWriteMap.get(CacheKey.FULL_SERVICE_REGISTRY) == null) {
                                 readOnlyMap.put(CacheKey.FULL_SERVICE_REGISTRY, null);
-                            } finally {
-                                writeLock.unlock();
                             }
-                        }
-                        if (readWriteMap.get(CacheKey.DELTA_SERVICE_REGISTRY) == null) {
-                            writeLock.lock();
-                            try {
+                            if (readWriteMap.get(CacheKey.DELTA_SERVICE_REGISTRY) == null) {
                                 readOnlyMap.put(CacheKey.DELTA_SERVICE_REGISTRY, null);
-                            } finally {
-                                writeLock.unlock();
                             }
                         }
+                    } finally {
+                        writeLock.unlock();
                     }
                     Thread.sleep(CACHE_MAP_SYNC_INTERVAL);
                 } catch (InterruptedException e) {
