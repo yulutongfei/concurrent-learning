@@ -17,6 +17,8 @@ public class ServiceAliveMonitor {
      */
     private static final Long CHECK_ALIVE_INTERVAL = 60 * 1000L;
 
+    private final ServiceRegistryCache registryCache = ServiceRegistryCache.getInstance();
+
     private final Daemon daemon;
 
     public ServiceAliveMonitor() {
@@ -48,9 +50,9 @@ public class ServiceAliveMonitor {
                     // 定义要删除的服务实例的集合
                     List<ServiceInstance> removingServiceInstances = new ArrayList<>();
                     // 开始读服务注册表的数据，这个过程中，别人是可以读，但是不可以写
+                    // 对整个服务注册表加读锁
+                    serviceRegistry.readLock();
                     try {
-                        // 对整个服务注册表加读锁
-                        serviceRegistry.readLock();
                         registryMap = serviceRegistry.getRegistry();
                         for (String serviceName : registryMap.keySet()) {
                             Map<String, ServiceInstance> instanceMap = registryMap.get(serviceName);
@@ -74,6 +76,11 @@ public class ServiceAliveMonitor {
                             selfProtectionPolicy.setExpectedHeartbeatRate(selfProtectionPolicy.getExpectedHeartbeatRate() - 2);
                             selfProtectionPolicy.setExpectedHeartbeatThreshold((long) (selfProtectionPolicy.getExpectedHeartbeatRate() * 0.85));
                         }
+                    }
+
+                    // 过期掉注册表缓存
+                    if (removingServiceInstances.size() != 0) {
+                        registryCache.invalidate();
                     }
                     Thread.sleep(CHECK_ALIVE_INTERVAL);
                 } catch (InterruptedException e) {

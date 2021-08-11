@@ -26,8 +26,7 @@ public class ServiceRegistry {
      * Map: key是服务名称, value是所有这个服务实例
      * Map<String, ServiceInstance> : key是服务实例id, value是服务实例的信息
      */
-    private Map<String, Map<String, ServiceInstance>> registry
-            = new HashMap<>();
+    private Map<String, Map<String, ServiceInstance>> registry = new HashMap<>();
 
     /**
      * 最近服务更新的队列
@@ -150,13 +149,8 @@ public class ServiceRegistry {
      * @return
      */
     public ServiceInstance getServiceInstance(String serviceName, String serviceInstanceId) {
-        try {
-            this.readLock();
-            Map<String, ServiceInstance> serviceInstanceMap = registry.get(serviceName);
-            return serviceInstanceMap.get(serviceInstanceId);
-        } finally {
-            this.readUnLock();
-        }
+        Map<String, ServiceInstance> serviceInstanceMap = registry.get(serviceName);
+        return serviceInstanceMap.get(serviceInstanceId);
     }
 
     /**

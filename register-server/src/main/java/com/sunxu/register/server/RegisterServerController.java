@@ -10,7 +10,15 @@ package com.sunxu.register.server;
  */
 public class RegisterServerController {
 
+    /**
+     * 服务注册表
+     */
     private final ServiceRegistry registry = ServiceRegistry.getInstance();
+
+    /**
+     * 服务注册表的缓存
+     */
+    private final ServiceRegistryCache registryCache = ServiceRegistryCache.getInstance();
 
     /**
      * 服务注册
@@ -37,6 +45,9 @@ public class RegisterServerController {
                 selfProtectionPolicy.setExpectedHeartbeatRate(selfProtectionPolicy.getExpectedHeartbeatRate() + 2);
                 selfProtectionPolicy.setExpectedHeartbeatThreshold((long) (selfProtectionPolicy.getExpectedHeartbeatRate() * 0.85));
             }
+
+            // 过期掉注册表缓存
+            registryCache.invalidate();
             response.setStatus(RegisterResponse.SUCCESS);
         } catch (Exception e) {
             e.printStackTrace();
@@ -59,6 +70,9 @@ public class RegisterServerController {
             selfProtectionPolicy.setExpectedHeartbeatRate(selfProtectionPolicy.getExpectedHeartbeatRate() - 2);
             selfProtectionPolicy.setExpectedHeartbeatThreshold((long) (selfProtectionPolicy.getExpectedHeartbeatRate() * 0.85));
         }
+
+        // 过期掉注册表缓存
+        registryCache.invalidate();
     }
 
     /**
@@ -94,12 +108,7 @@ public class RegisterServerController {
      * @return
      */
     public Applications fetchFullRegistry() {
-        try {
-            registry.readLock();
-            return new Applications(registry.getRegistry());
-        } finally {
-            registry.readUnLock();
-        }
+        return (Applications) registryCache.get(ServiceRegistryCache.CacheKey.FULL_SERVICE_REGISTRY);
     }
 
     /**
@@ -108,11 +117,6 @@ public class RegisterServerController {
      * @return
      */
     public DeltaRegistry fetchDeltaRegistry() {
-        try {
-            registry.readLock();
-            return registry.getDeltaRegistry();
-        } finally {
-            registry.readUnLock();
-        }
+        return (DeltaRegistry) registryCache.get(ServiceRegistryCache.CacheKey.DELTA_SERVICE_REGISTRY);
     }
 }
