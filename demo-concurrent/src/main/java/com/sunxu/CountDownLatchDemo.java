@@ -1,5 +1,7 @@
 package com.sunxu;
 
+import java.util.concurrent.CountDownLatch;
+
 /**
  * @author 孙许
  * @version 1.0
@@ -7,19 +9,15 @@ package com.sunxu;
  */
 public class CountDownLatchDemo {
 
-    public static void main(String[] args) {
-//        CountDownLatch countDownLatch = new CountDownLatch(10);
-//
-//        Semaphore semaphore = new Semaphore(3);
-//        semaphore.acquire();
-//        semaphore.release();
-//
-//        for (int i = 0; i < 10; i++) {
-//            new Thread(() -> {
-//                countDownLatch.countDown();
-//            }).start();
-//        }
-//
-//        countDownLatch.await();
+    public static void main(String[] args) throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(3);
+
+        for (int i = 0; i < 3; i++) {
+            new Thread(() -> {
+                countDownLatch.countDown();
+            }).start();
+        }
+
+        countDownLatch.await();
     }
 }
