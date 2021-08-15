@@ -1,8 +1,8 @@
 package com.sunxu.register.server;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -26,7 +26,7 @@ public class ServiceRegistry {
      * Map: key是服务名称, value是所有这个服务实例
      * Map<String, ServiceInstance> : key是服务实例id, value是服务实例的信息
      */
-    private Map<String, Map<String, ServiceInstance>> registry = new HashMap<>();
+    private Map<String, Map<String, ServiceInstance>> registry = new ConcurrentHashMap<>();
 
     /**
      * 最近服务更新的队列
@@ -66,16 +66,17 @@ public class ServiceRegistry {
      * @param serviceInstance
      */
     public void register(ServiceInstance serviceInstance) {
+        // 加写锁
+        this.writeLock();
         try {
-            // 加写锁
-            this.writeLock();
             // 将服务实例放入最新变更的队列中
             RecentlyChangedServiceInstance recentlyChangedItem = new RecentlyChangedServiceInstance(serviceInstance,
                     System.currentTimeMillis(), ServiceInstanceOperation.REGISTER);
             recentlyChangedQueue.offer(recentlyChangedItem);
 
             // 将服务实例放入注册表
-            Map<String, ServiceInstance> serviceInstanceMap = registry.computeIfAbsent(serviceInstance.getServiceName(), k -> new HashMap<>());
+            Map<String, ServiceInstance> serviceInstanceMap = registry.computeIfAbsent(serviceInstance.getServiceName(),
+                    k -> new ConcurrentHashMap<>());
             serviceInstanceMap.put(serviceInstance.getServiceInstanceId(), serviceInstance);
 
             System.out.println("服务实例[" + serviceInstance + "], 完成注册...");
@@ -93,9 +94,9 @@ public class ServiceRegistry {
      * @param serviceId
      */
     public void remove(String serviceName, String serviceId) {
+        // 加写锁
+        this.writeLock();
         try {
-            // 加写锁
-            this.writeLock();
             System.out.println("服务实例[" + serviceName + ":" + serviceId + "],从注册表摘除");
             // 获取服务实例
             Map<String, ServiceInstance> serviceInstanceMap = registry.get(serviceName);
