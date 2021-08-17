@@ -1,5 +1,7 @@
 package com.sunxu.dfs.datanode.server;
 
+import java.util.Iterator;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -8,7 +10,7 @@ import java.util.concurrent.CountDownLatch;
  * @date 2021/8/14 14:12
  * 负责根一组NameNode进行通信的offerService
  */
-public class NameNodeGroupOfferService {
+public class NameNodeOfferService {
 
     /**
      * 负责跟NameNode主节点通信的serviceActor组件
@@ -20,9 +22,17 @@ public class NameNodeGroupOfferService {
      */
     private NameNodeServiceActor standbyServiceActor;
 
-    public NameNodeGroupOfferService() {
+    /**
+     * 这个dataNode上保持的ServiceActor列表
+     */
+    private CopyOnWriteArrayList<NameNodeServiceActor> serviceActors;
+
+    public NameNodeOfferService() {
         this.activeServiceActor = new NameNodeServiceActor();
         this.standbyServiceActor = new NameNodeServiceActor();
+        this.serviceActors = new CopyOnWriteArrayList<>();
+        this.serviceActors.add(activeServiceActor);
+        this.serviceActors.add(standbyServiceActor);
     }
 
     /**
@@ -43,5 +53,24 @@ public class NameNodeGroupOfferService {
             e.printStackTrace();
         }
         System.out.println("主备2个NameNode全部注册完毕");
+    }
+
+    /**
+     * 关闭指定的serviceActor
+     *
+     * @param serviceActor
+     */
+    public void shutdown(NameNodeServiceActor serviceActor) {
+        this.serviceActors.remove(serviceActor);
+    }
+
+    /**
+     * 迭代遍历serviceActors
+     */
+    public void iterateServiceActors() {
+        Iterator<NameNodeServiceActor> iterator = serviceActors.iterator();
+        while (iterator.hasNext()) {
+            NameNodeServiceActor serviceActor = iterator.next();
+        }
     }
 }

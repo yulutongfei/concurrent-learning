@@ -12,7 +12,7 @@ public class DataNode {
     /**
      * 负责跟一组nameNode通信的组件
      */
-    private NameNodeGroupOfferService offerService;
+    private NameNodeOfferService offerService;
 
     public static void main(String[] args) {
         DataNode dataNode = new DataNode();
@@ -25,7 +25,7 @@ public class DataNode {
      */
     private void initialize() {
         this.shouldRun = true;
-        this.offerService = new NameNodeGroupOfferService();
+        this.offerService = new NameNodeOfferService();
         this.offerService.start();
     }
 
