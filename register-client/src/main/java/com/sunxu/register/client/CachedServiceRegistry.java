@@ -1,7 +1,7 @@
 package com.sunxu.register.client;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicStampedReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -195,7 +195,7 @@ public class CachedServiceRegistry {
                     String serviceInstanceId = recentlyChangedItem.serviceInstance.getServiceInstanceId();
                     String serviceName = recentlyChangedItem.serviceInstance.getServiceName();
                     if (ServiceInstanceOperation.REGISTER.equals(recentlyChangedItem.serviceInstanceOperation)) {
-                        Map<String, ServiceInstance> serviceInstanceMap = registry.computeIfAbsent(serviceName, k -> new HashMap<>());
+                        Map<String, ServiceInstance> serviceInstanceMap = registry.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
                         serviceInstanceMap.computeIfAbsent(serviceInstanceId, k -> recentlyChangedItem.serviceInstance);
                     } else if (ServiceInstanceOperation.REMOVE.equals(recentlyChangedItem.serviceInstanceOperation)) {
                         // 如果是删除操作的话

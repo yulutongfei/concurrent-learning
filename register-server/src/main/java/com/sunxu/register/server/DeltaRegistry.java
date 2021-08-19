@@ -1,6 +1,7 @@
 package com.sunxu.register.server;
 
 import java.util.LinkedList;
+import java.util.Queue;
 
 /**
  * @author 孙许
@@ -10,16 +11,16 @@ import java.util.LinkedList;
  */
 public class DeltaRegistry {
 
-    private LinkedList<ServiceRegistry.RecentlyChangedServiceInstance> recentlyChangeQueue;
+    private Queue<ServiceRegistry.RecentlyChangedServiceInstance> recentlyChangeQueue;
 
     private Long serviceInstanceTotalCount;
 
-    public DeltaRegistry(LinkedList<ServiceRegistry.RecentlyChangedServiceInstance> recentlyChangeQueue, Long serviceInstanceTotalCount) {
+    public DeltaRegistry(Queue<ServiceRegistry.RecentlyChangedServiceInstance> recentlyChangeQueue, Long serviceInstanceTotalCount) {
         this.recentlyChangeQueue = recentlyChangeQueue;
         this.serviceInstanceTotalCount = serviceInstanceTotalCount;
     }
 
-    public LinkedList<ServiceRegistry.RecentlyChangedServiceInstance> getRecentlyChangeQueue() {
+    public Queue<ServiceRegistry.RecentlyChangedServiceInstance> getRecentlyChangeQueue() {
         return recentlyChangeQueue;
     }
 

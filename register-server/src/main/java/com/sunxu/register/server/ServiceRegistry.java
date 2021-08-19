@@ -1,8 +1,9 @@
 package com.sunxu.register.server;
 
-import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -31,8 +32,8 @@ public class ServiceRegistry {
     /**
      * 最近服务更新的队列
      */
-    private LinkedList<RecentlyChangedServiceInstance> recentlyChangedQueue =
-            new LinkedList<>();
+    private Queue<RecentlyChangedServiceInstance> recentlyChangedQueue =
+            new ConcurrentLinkedQueue<>();
 
     /**
      * 服务注册表的锁
@@ -123,16 +124,19 @@ public class ServiceRegistry {
         public void run() {
             while (true) {
                 try {
-                    synchronized (instance) {
+                    writeLock();
+                    try {
                         RecentlyChangedServiceInstance recentlyChangedItem = null;
                         Long currentTimestamp = System.currentTimeMillis();
                         while ((recentlyChangedItem = recentlyChangedQueue.peek()) != null) {
                             // 判断如果一个服务实例变更信息已经在队列中超过3分钟了
                             // 就从队列删除
                             if (currentTimestamp - recentlyChangedItem.changedTimestamp > RECENTLY_CHANGED_ITEM_EXPIRED) {
-                                recentlyChangedQueue.pop();
+                                recentlyChangedQueue.poll();
                             }
                         }
+                    } finally {
+                        writeUnLock();
                     }
                     Thread.sleep(RECENTLY_CHANGED_ITEM_CHECK_INTERVAL);
                 } catch (InterruptedException e) {
